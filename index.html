@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#172b46">
+<title>Registro de Entregas - Pañol</title>
+<style>
+:root {
+  --azul:#172b46;
+  --azul2:#24558a;
+  --fondo:#eef2f6;
+  --blanco:#ffffff;
+  --gris:#657386;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:var(--fondo);
+  color:#243247;
+}
+header{
+  background:var(--azul);
+  color:white;
+  padding:23px 18px;
+}
+header h1{font-size:22px;margin:0 0 6px}
+header p{margin:0;color:#c5d4e6;font-size:13px}
+main{max-width:650px;margin:auto;padding:16px}
+.card{
+  background:white;
+  padding:18px;
+  border-radius:14px;
+  margin-bottom:15px;
+  box-shadow:0 3px 12px #172b4610;
+}
+h2{font-size:18px;margin:0 0 16px}
+label{
+  display:block;
+  font-size:13px;
+  font-weight:bold;
+  margin:13px 0 6px;
+}
+input,textarea{
+  width:100%;
+  padding:12px;
+  border:1px solid #ccd5df;
+  border-radius:9px;
+  font-size:15px;
+  background:white;
+}
+button{
+  border:0;
+  border-radius:9px;
+  padding:13px;
+  font-size:14px;
+  font-weight:bold;
+  cursor:pointer;
+}
+.primary{background:var(--azul2);color:white;width:100%;margin-top:18px}
+.secondary{background:#e5edf6;color:var(--azul);width:100%}
+.tabs{display:flex;gap:8px;margin-bottom:15px}
+.tabs button{flex:1;background:#dce5ef;color:var(--azul)}
+.tabs button.active{background:var(--azul);color:white}
+.hidden{display:none}
+.stat{
+  background:#e9f0f8;
+  padding:13px;
+  border-radius:10px;
+  text-align:center;
+  flex:1;
+}
+.stats{display:flex;gap:10px;margin-bottom:15px}
+.stat strong{display:block;font-size:22px;color:var(--azul)}
+.stat span{font-size:12px;color:var(--gris)}
+.record{
+  border:1px solid #e0e6ed;
+  border-radius:10px;
+  padding:13px;
+  margin-bottom:10px;
+}
+.record h3{margin:0 0 7px;font-size:16px}
+.record p{font-size:13px;margin:5px 0;color:#536276}
+.difference{color:#bd6b19;font-weight:bold}
+.ok{color:#23804b;font-weight:bold}
+small{color:var(--gris)}
+</style>
+</head>
+<body>
+<header>
+  <h1>📦 Registro de Entregas</h1>
+  <p>Control personal de movimientos del pañol</p>
+</header>
+<main>
+  <div class="stats">
+    <div class="stat"><strong id="total">0</strong><span>Entregas</span></div>
+    <div class="stat"><strong id="diff">0</strong><span>Diferencias</span></div>
+  </div>
+
+  <div class="tabs">
+    <button id="tabNew" class="active" onclick="showTab('new')">＋ Entrega</button>
+    <button id="tabHistory" onclick="showTab('history')">☷ Historial</button>
+  </div>
+
+  <section id="new">
+    <div class="card">
+      <h2>Nueva entrega</h2>
+      <form id="form">
+        <label>Número de parte o tarea</label>
+        <input id="parte" required placeholder="Ej: Tarea 1250">
+
+        <label>Nombre del repuesto</label>
+        <input id="repuesto" required placeholder="Nombre del repuesto">
+
+        <label>Fotografía / observaciones de etiqueta</label>
+        <input id="foto" type="file" accept="image/*" capture="environment">
+        <textarea id="texto" rows="2" placeholder="Texto de la etiqueta o código leído"></textarea>
+
+        <label>Cantidad entregada</label>
+        <input id="entregada" type="number" min="0" step="any" required>
+
+        <label>Stock que figura en el sistema</label>
+        <input id="sistema" type="number" min="0" step="any" required>
+
+        <label>Stock físico observado</label>
+        <input id="fisico" type="number" min="0" step="any" required>
+
+        <label>Usuario / pañolero</label>
+        <input id="usuario" placeholder="Nombre del responsable">
+
+        <button class="primary" type="submit">GUARDAR ENTREGA</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="history" class="hidden">
+    <div class="card">
+      <h2>Historial de entregas</h2>
+      <input id="buscar" placeholder="Buscar repuesto o número de tarea..." oninput="render()">
+      <div id="lista" style="margin-top:15px"></div>
+      <button class="secondary" onclick="exportar()">DESCARGAR RESPALDO JSON</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const KEY="panol_entregas_v1";
+let registros=JSON.parse(localStorage.getItem(KEY)||"[]");
+
+function guardar(){
+  localStorage.setItem(KEY,JSON.stringify(registros));
+  actualizar();
+}
+
+function showTab(tab){
+  document.getElementById("new").classList.toggle("hidden",tab!=="new");
+  document.getElementById("history").classList.toggle("hidden",tab!=="history");
+  document.getElementById("tabNew").classList.toggle("active",tab==="new");
+  document.getElementById("tabHistory").classList.toggle("active",tab==="history");
+  if(tab==="history")render();
+}
+
+document.getElementById("form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const archivo=document.getElementById("foto").files[0];
+  let foto="";
+  if(archivo){
+    foto=await new Promise(resolve=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result);
+      reader.readAsDataURL(archivo);
+    });
+  }
+
+  const r={
+    id:Date.now(),
+    fecha:new Date().toISOString(),
+    parte:parte.value,
+    repuesto:repuesto.value,
+    texto:texto.value,
+    foto:foto,
+    entregada:Number(entregada.value),
+    sistema:Number(sistema.value),
+    fisico:Number(fisico.value),
+    usuario:usuario.value
+  };
+  registros.unshift(r);
+  guardar();
+  e.target.reset();
+  alert("Entrega guardada correctamente");
+  showTab("history");
+});
+
+function actualizar(){
+  document.getElementById("total").textContent=registros.length;
+  document.getElementById("diff").textContent=
+    registros.filter(r=>r.sistema!==r.fisico).length;
+}
+
+function render(){
+  const q=document.getElementById("buscar").value.toLowerCase();
+  const lista=document.getElementById("lista");
+  const encontrados=registros.filter(r=>
+    (r.parte+" "+r.repuesto+" "+r.texto+" "+r.usuario).toLowerCase().includes(q)
+  );
+  lista.innerHTML="";
+  if(!encontrados.length){
+    lista.innerHTML="<p>No hay registros para mostrar.</p>";
+    return;
+  }
+  encontrados.forEach(r=>{
+    const div=document.createElement("div");
+    div.className="record";
+    const fecha=new Date(r.fecha).toLocaleString("es-AR");
+    const diferencia=r.sistema-r.fisico;
+    div.innerHTML=`
+      <h3>${escapeHTML(r.repuesto)}</h3>
+      <p><b>Parte/tarea:</b> ${escapeHTML(r.parte)}</p>
+      <p><b>Fecha:</b> ${fecha}</p>
+      <p><b>Entregado:</b> ${r.entregada}</p>
+      <p><b>Stock sistema:</b> ${r.sistema} | <b>Stock físico:</b> ${r.fisico}</p>
+      <p class="${diferencia!==0?'difference':'ok'}">
+      ${diferencia!==0?'Diferencia: '+diferencia:'Sin diferencia'}
+      </p>
+      <p><b>Usuario:</b> ${escapeHTML(r.usuario||"No indicado")}</p>
+      <p>${escapeHTML(r.texto)}</p>
+      ${r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px">':''}
+    `;
+    lista.appendChild(div);
+  });
+}
+
+function escapeHTML(s){
+  return String(s??"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+function exportar(){
+  const blob=new Blob([JSON.stringify(registros,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="respaldo_panol.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+actualizar();
+</script>
+</body>
+</html>
