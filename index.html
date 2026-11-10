@@ -1,584 +1,594 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Registro de entregas - Pañol</title>
+<meta name="theme-color" content="#172b46">
+<title>Registro de Entregas - Pañol</title>
+
+<!-- LECTOR ZXING: ARCHIVO UMD CORREGIDO -->
+<script src="https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
 
 <style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  padding: 16px;
-  background: #eef1f5;
-  color: #263445;
-  font-family: Arial, sans-serif;
+*{box-sizing:border-box}
+body{
+ margin:0;background:#eef2f6;color:#243247;
+ font-family:Arial,sans-serif
 }
-
-header {
-  background: #263f5c;
-  color: white;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  margin-bottom: 16px;
+header{background:#172b46;color:white;padding:22px 18px}
+header h1{font-size:21px;margin:0 0 6px}
+header p{margin:0;color:#c5d4e6;font-size:13px}
+main{max-width:650px;margin:auto;padding:15px}
+.card{
+ background:white;padding:18px;border-radius:14px;
+ margin-bottom:15px;box-shadow:0 3px 12px #172b4610
 }
-
-h1 { font-size: 22px; margin: 0; }
-h2 { font-size: 19px; }
-
-.card {
-  background: white;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 7px #00000012;
+h2{font-size:18px;margin:0 0 15px}
+label{
+ display:block;font-size:13px;font-weight:bold;
+ margin:13px 0 6px
 }
-
-label {
-  display: block;
-  margin-top: 12px;
-  margin-bottom: 5px;
-  font-weight: bold;
-  font-size: 14px;
+input,textarea{
+ width:100%;padding:12px;border:1px solid #ccd5df;
+ border-radius:9px;font-size:15px;background:white
 }
-
-input, textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #cbd3dc;
-  border-radius: 8px;
-  font-size: 16px;
-  background: white;
+button{
+ border:0;border-radius:9px;padding:13px;
+ font-size:14px;font-weight:bold;cursor:pointer
 }
-
-textarea { min-height: 75px; }
-
-button {
-  width: 100%;
-  padding: 14px;
-  margin-top: 12px;
-  border: 0;
-  border-radius: 8px;
-  background: #315d88;
-  color: white;
-  font-size: 15px;
-  font-weight: bold;
+button:disabled{opacity:.5}
+.primary{
+ background:#24558a;color:white;width:100%;margin-top:18px
 }
-
-button.secondary { background: #526579; }
-button.danger { background: #a33d3d; }
-
-#estado {
-  padding: 10px;
-  margin-top: 12px;
-  border-radius: 8px;
-  background: #edf3f8;
-  font-size: 14px;
+.secondary{
+ background:#e5edf6;color:#172b46;width:100%;margin-top:10px
 }
-
-.entrega {
-  border: 1px solid #dce2e9;
-  border-radius: 9px;
-  padding: 12px;
-  margin-top: 12px;
-  overflow-wrap: anywhere;
+.tabs{display:flex;gap:8px;margin-bottom:15px}
+.tabs button{flex:1;background:#dce5ef;color:#172b46}
+.tabs button.active{background:#172b46;color:white}
+.hidden{display:none}
+.stats{display:flex;gap:10px;margin-bottom:15px}
+.stat{
+ background:#e9f0f8;padding:13px;border-radius:10px;
+ text-align:center;flex:1
 }
-
-.entrega img {
-  display: block;
-  max-width: 100%;
-  max-height: 260px;
-  object-fit: contain;
-  margin-top: 10px;
-  border-radius: 8px;
+.stat strong{
+ display:block;font-size:22px;color:#172b46
 }
-
-.dato { margin: 6px 0; font-size: 14px; }
-.fecha { color: #68798a; font-size: 12px; }
-#archivoRespaldo { display: none; }
-
-#panelEscaner {
-  display: none;
-  margin-top: 14px;
-  padding: 12px;
-  background: #edf3f8;
-  border-radius: 10px;
+.stat span{font-size:12px;color:#657386}
+.record{
+ border:1px solid #e0e6ed;border-radius:10px;
+ padding:13px;margin-bottom:10px;overflow-wrap:anywhere
 }
-
-#videoEscaner {
-  width: 100%;
-  max-height: 350px;
-  background: #111;
-  border-radius: 8px;
+.record h3{margin:0 0 7px;font-size:16px}
+.record p{font-size:13px;margin:6px 0;color:#536276}
+.difference{color:#bd6b19;font-weight:bold}
+.ok{color:#23804b;font-weight:bold}
+.record img{
+ width:100%;max-height:220px;object-fit:contain;margin-top:8px
 }
-
-.aviso {
-  font-size: 13px;
-  color: #526579;
+#estado{font-size:13px;color:#536276;margin-top:10px}
+#estadoEscaner{font-size:13px;margin-top:10px;color:#536276}
+#videoEscaner{
+ width:100%;max-height:300px;background:#111;
+ border-radius:10px;margin-top:12px
+}
+.scanner-box{
+ margin-top:12px;padding:12px;background:#f1f5f9;
+ border-radius:10px
 }
 </style>
 </head>
 
 <body>
-
 <header>
-  <h1>REGISTRO DE ENTREGAS</h1>
-  <p>Pañol - Registro personal</p>
+ <h1>📦 Registro de Entregas</h1>
+ <p>Control personal de movimientos del pañol</p>
 </header>
 
-<section class="card">
-  <h2>Nueva entrega</h2>
+<main>
 
-  <form id="formEntrega">
+<div class="stats">
+ <div class="stat">
+  <strong id="total">0</strong>
+  <span>Entregas</span>
+ </div>
+ <div class="stat">
+  <strong id="diff">0</strong>
+  <span>Diferencias</span>
+ </div>
+</div>
 
-    <label for="parte">Número de parte / tarea</label>
-    <input id="parte" type="text" placeholder="Número de parte o tarea">
+<div class="tabs">
+ <button id="tabNew" class="active" type="button">＋ Entrega</button>
+ <button id="tabHistory" type="button">☷ Historial</button>
+</div>
 
-    <label for="repuesto">Repuesto</label>
-    <input id="repuesto" type="text" required placeholder="Nombre del repuesto">
+<section id="new">
+<div class="card">
+<h2>Nueva entrega</h2>
 
-    <label for="codigoBarras">Código de barras / QR (opcional)</label>
-    <input id="codigoBarras" type="text" placeholder="Escaneá o escribí el código">
+<form id="formEntrega">
 
-    <button type="button" id="abrirEscaner">
-      ESCANEAR CÓDIGO CON LA CÁMARA
-    </button>
+<label>Número de parte o tarea</label>
+<input id="parte" required placeholder="Ej: Tarea 1250">
 
-    <div id="panelEscaner">
-      <p><strong>Apuntá la cámara al código del repuesto.</strong></p>
-      <video id="videoEscaner" muted playsinline></video>
-      <p id="estadoEscaner" class="aviso">Iniciando cámara...</p>
-      <button type="button" class="danger" id="cerrarEscaner">
-        CERRAR ESCÁNER
-      </button>
-    </div>
+<label>Nombre del repuesto</label>
+<input id="repuesto" required placeholder="Nombre del repuesto">
 
-    <label for="foto">Fotografía de la etiqueta</label>
-    <input id="foto" type="file" accept="image/*" capture="environment">
+<label>Fotografía de la etiqueta</label>
+<input id="foto" type="file" accept="image/*" capture="environment">
 
-    <label for="texto">Texto leído de la etiqueta</label>
-    <textarea id="texto" placeholder="Podés escribir o corregir el texto manualmente"></textarea>
+<label>Texto de la etiqueta</label>
+<textarea id="texto" rows="2" placeholder="Texto de la etiqueta"></textarea>
 
-    <label for="entregada">Cantidad entregada</label>
-    <input id="entregada" type="number" min="0" step="any">
+<label>Código de barras o QR (opcional)</label>
+<input id="codigoBarras" placeholder="Ingresar código manualmente">
 
-    <label for="sistema">Stock en sistema observado</label>
-    <input id="sistema" type="number" step="any">
+<button type="button" class="secondary" id="btnEscanear">
+ ESCANEAR CÓDIGO CON LA CÁMARA
+</button>
 
-    <label for="fisico">Stock físico observado</label>
-    <input id="fisico" type="number" step="any">
+<div id="zonaEscaner" class="scanner-box hidden">
+ <video id="videoEscaner" playsinline></video>
+ <p id="estadoEscaner">Preparando lector...</p>
+ <button type="button" class="secondary" id="btnDetener">
+  DETENER CÁMARA
+ </button>
+</div>
 
-    <label for="usuario">Usuario</label>
-    <input id="usuario" type="text" placeholder="Nombre del usuario">
+<label>Cantidad entregada</label>
+<input id="entregada" type="number" min="0" step="any" required>
 
-    <button type="submit">GUARDAR ENTREGA</button>
-  </form>
+<label>Stock del sistema</label>
+<input id="sistema" type="number" min="0" step="any" required>
 
-  <div id="estado">Preparando almacenamiento...</div>
+<label>Stock físico observado</label>
+<input id="fisico" type="number" min="0" step="any" required>
+
+<label>Usuario / pañolero</label>
+<input id="usuario" placeholder="Nombre del responsable">
+
+<button class="primary" id="guardar" type="submit">
+ GUARDAR ENTREGA
+</button>
+
+<p id="estado" role="status"></p>
+</form>
+</div>
 </section>
 
-<section class="card">
-  <h2>Historial de entregas</h2>
+<section id="history" class="hidden">
+<div class="card">
+<h2>Historial de entregas</h2>
 
-  <input id="buscar" type="search"
-  placeholder="Buscar por repuesto, parte o código">
+<input id="buscar" placeholder="Buscar repuesto, tarea o código...">
 
-  <div id="historial">Cargando historial...</div>
+<div id="lista" style="margin-top:15px"></div>
 
-  <button class="secondary" id="exportar">
-    DESCARGAR RESPALDO JSON
-  </button>
+<button class="secondary" id="exportar" type="button">
+ DESCARGAR RESPALDO JSON
+</button>
 
-  <input id="archivoRespaldo" type="file" accept=".json,application/json">
+<label>Restaurar copia de seguridad</label>
+<input id="archivoRespaldo" type="file" accept=".json,application/json">
 
-  <button class="secondary" id="importar">
-    RESTAURAR RESPALDO JSON
-  </button>
+<button class="secondary" id="importar" type="button">
+ RESTAURAR RESPALDO
+</button>
+</div>
 </section>
 
-<!-- Biblioteca para leer códigos de barras y QR -->
-<script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+</main>
 
 <script>
-const DB_NAME = "PanolRegistroDB";
-const STORE_NAME = "entregas";
+"use strict";
 
-let db;
-let lector;
-let controlesEscaner = null;
+const DB_NAME="PanolRegistroDB";
+const DB_VERSION=1;
+const STORE_NAME="entregas";
 
-const $ = id => document.getElementById(id);
+let db=null;
+let registros=[];
+let lector=null;
+let controlesEscaner=null;
+let escaneando=false;
 
-function mensaje(texto) {
-  $("estado").textContent = texto;
+const $=id=>document.getElementById(id);
+
+/* BASE DE DATOS */
+
+function abrirDB(){
+ return new Promise((resolve,reject)=>{
+  const request=indexedDB.open(DB_NAME,DB_VERSION);
+
+  request.onupgradeneeded=()=>{
+   const database=request.result;
+   if(!database.objectStoreNames.contains(STORE_NAME)){
+    database.createObjectStore(STORE_NAME,{keyPath:"id"});
+   }
+  };
+
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error);
+ });
 }
 
-function abrirDB() {
-  return new Promise((resolve, reject) => {
-    const solicitud = indexedDB.open(DB_NAME);
-
-    solicitud.onupgradeneeded = () => {
-      const base = solicitud.result;
-
-      if (!base.objectStoreNames.contains(STORE_NAME)) {
-        base.createObjectStore(STORE_NAME, { keyPath: "id" });
-      }
-    };
-
-    solicitud.onsuccess = () => {
-      db = solicitud.result;
-
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        reject(new Error("No se encontró la tabla de entregas."));
-        return;
-      }
-
-      resolve(db);
-    };
-
-    solicitud.onerror = () => reject(solicitud.error);
-  });
+function guardarDB(registro){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE_NAME,"readwrite");
+  tx.objectStore(STORE_NAME).put(registro);
+  tx.oncomplete=()=>resolve();
+  tx.onerror=()=>reject(tx.error);
+  tx.onabort=()=>reject(tx.error);
+ });
 }
 
-function guardarDB(registro) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).put(registro);
-
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+function leerTodos(){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE_NAME,"readonly");
+  const request=tx.objectStore(STORE_NAME).getAll();
+  request.onsuccess=()=>resolve(request.result||[]);
+  request.onerror=()=>reject(request.error);
+ });
 }
 
-function leerTodos() {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readonly");
-    const solicitud = tx.objectStore(STORE_NAME).getAll();
-
-    solicitud.onsuccess = () => resolve(solicitud.result);
-    solicitud.onerror = () => reject(solicitud.error);
-  });
+async function cargar(){
+ try{
+  db=await abrirDB();
+  registros=await leerTodos();
+  ordenarRegistros();
+  actualizar();
+  $("estado").textContent="Almacenamiento local preparado.";
+ }catch(error){
+  console.error(error);
+  $("estado").textContent="Error al abrir almacenamiento: "+error.message;
+  alert("No se pudo preparar el almacenamiento. No cargues entregas todavía.");
+ }
 }
 
-function escapar(valor) {
-  return String(valor ?? "").replace(/[&<>"']/g, letra => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;"
-  })[letra]);
+function ordenarRegistros(){
+ registros.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
 }
 
-function fechaBonita(fecha) {
-  if (!fecha) return "Fecha no disponible";
-
-  const d = new Date(fecha);
-  if (isNaN(d.getTime())) return String(fecha);
-
-  return d.toLocaleString("es-AR");
+function actualizar(){
+ $("total").textContent=registros.length;
+ $("diff").textContent=registros.filter(
+  r=>Number(r.sistema)!==Number(r.fisico)
+ ).length;
 }
 
-async function mostrarHistorial() {
-  const registros = await leerTodos();
-  const filtro = $("buscar").value.trim().toLowerCase();
+/* PESTAÑAS */
 
-  registros.sort((a, b) =>
-    new Date(b.fecha || 0) - new Date(a.fecha || 0)
+function mostrarTab(tab){
+ $("new").classList.toggle("hidden",tab!=="new");
+ $("history").classList.toggle("hidden",tab!=="history");
+ $("tabNew").classList.toggle("active",tab==="new");
+ $("tabHistory").classList.toggle("active",tab==="history");
+
+ if(tab==="history")render();
+}
+
+$("tabNew").addEventListener("click",()=>mostrarTab("new"));
+$("tabHistory").addEventListener("click",()=>mostrarTab("history"));
+
+/* GUARDAR ENTREGA */
+
+$("formEntrega").addEventListener("submit",async e=>{
+ e.preventDefault();
+
+ if(!db){
+  alert("El almacenamiento todavía no está disponible.");
+  return;
+ }
+
+ const boton=$("guardar");
+ boton.disabled=true;
+ boton.textContent="GUARDANDO...";
+ $("estado").textContent="Guardando entrega y fotografía...";
+
+ try{
+  const archivo=$("foto").files[0]||null;
+
+  if(archivo && !archivo.type.startsWith("image/")){
+   throw new Error("El archivo seleccionado no es una imagen.");
+  }
+
+  const registro={
+   id:Date.now(),
+   fecha:new Date().toISOString(),
+   parte:$("parte").value.trim(),
+   repuesto:$("repuesto").value.trim(),
+   texto:$("texto").value.trim(),
+   codigoBarras:$("codigoBarras").value.trim(),
+   foto:archivo,
+   entregada:Number($("entregada").value),
+   sistema:Number($("sistema").value),
+   fisico:Number($("fisico").value),
+   usuario:$("usuario").value.trim()
+  };
+
+  await guardarDB(registro);
+
+  registros=await leerTodos();
+  ordenarRegistros();
+  actualizar();
+
+  $("formEntrega").reset();
+  $("estado").textContent="Entrega guardada correctamente.";
+
+  alert("¡Entrega guardada correctamente!");
+  detenerEscaner();
+  mostrarTab("history");
+
+ }catch(error){
+  console.error(error);
+  $("estado").textContent="ERROR: "+error.message;
+  alert("No se pudo guardar la entrega: "+error.message);
+ }finally{
+  boton.disabled=false;
+  boton.textContent="GUARDAR ENTREGA";
+ }
+});
+
+/* HISTORIAL Y BÚSQUEDA */
+
+function render(){
+ const q=$("buscar").value.toLowerCase();
+ const lista=$("lista");
+ lista.innerHTML="";
+
+ const encontrados=registros.filter(r=>
+  (
+   (r.parte||"")+" "+
+   (r.repuesto||"")+" "+
+   (r.texto||"")+" "+
+   (r.codigoBarras||"")+" "+
+   (r.usuario||"")
+  ).toLowerCase().includes(q)
+ );
+
+ if(!encontrados.length){
+  lista.textContent="No hay registros para mostrar.";
+  return;
+ }
+
+ encontrados.forEach(r=>{
+  const div=document.createElement("div");
+  div.className="record";
+
+  const diferencia=Number(r.sistema)-Number(r.fisico);
+
+  const titulo=document.createElement("h3");
+  titulo.textContent=r.repuesto||"Sin nombre";
+
+  const fecha=document.createElement("p");
+  fecha.textContent="Fecha: "+new Date(r.fecha).toLocaleString("es-AR");
+
+  const datos=document.createElement("p");
+  datos.textContent=
+   "Parte/tarea: "+(r.parte||"")+
+   " | Entregado: "+r.entregada+
+   " | Sistema: "+r.sistema+
+   " | Físico: "+r.fisico;
+
+  const dif=document.createElement("p");
+  dif.className=diferencia!==0?"difference":"ok";
+  dif.textContent=diferencia!==0?
+   "Diferencia: "+diferencia:"Sin diferencia";
+
+  const usuario=document.createElement("p");
+  usuario.textContent="Usuario: "+(r.usuario||"No indicado");
+
+  const texto=document.createElement("p");
+  texto.textContent="Etiqueta: "+(r.texto||"Sin texto");
+
+  const codigo=document.createElement("p");
+  codigo.textContent="Código: "+(r.codigoBarras||"Sin código");
+
+  div.append(titulo,fecha,datos,dif,usuario,texto,codigo);
+
+  if(r.foto){
+   const img=document.createElement("img");
+
+   if(r.foto instanceof Blob){
+    const url=URL.createObjectURL(r.foto);
+    img.src=url;
+    img.onload=()=>URL.revokeObjectURL(url);
+   }else if(typeof r.foto==="string"){
+    img.src=r.foto;
+   }
+
+   img.alt="Fotografía de etiqueta";
+   div.appendChild(img);
+  }
+
+  lista.appendChild(div);
+ });
+}
+
+$("buscar").addEventListener("input",render);
+
+/* ESCÁNER DE CÓDIGOS */
+
+async function iniciarEscaner(){
+ const zona=$("zonaEscaner");
+ const estado=$("estadoEscaner");
+ const video=$("videoEscaner");
+
+ zona.classList.remove("hidden");
+ estado.textContent="Comprobando lector...";
+
+ if(!window.ZXingBrowser ||
+    !window.ZXingBrowser.BrowserMultiFormatReader){
+  estado.textContent="No se pudo cargar la biblioteca del lector. Revisá la conexión a internet.";
+  return;
+ }
+
+ try{
+  lector=new ZXingBrowser.BrowserMultiFormatReader();
+  estado.textContent="Solicitando acceso a la cámara...";
+
+  escaneando=true;
+
+  controlesEscaner=await lector.decodeFromVideoDevice(
+   undefined,
+   video,
+   (resultado,error)=>{
+    if(resultado){
+     const codigo=resultado.getText();
+     $("codigoBarras").value=codigo;
+     estado.textContent="Código leído correctamente: "+codigo;
+     detenerEscaner();
+    }
+   }
   );
 
-  const filtrados = registros.filter(r =>
-    String(r.repuesto || "").toLowerCase().includes(filtro) ||
-    String(r.parte || "").toLowerCase().includes(filtro) ||
-    String(r.codigoBarras || "").toLowerCase().includes(filtro)
+  if(escaneando){
+   estado.textContent="Cámara activa. Apuntá al código de barras o QR.";
+  }
+
+ }catch(error){
+  console.error(error);
+  escaneando=false;
+
+  estado.textContent=
+   "No se pudo abrir la cámara: "+
+   (error.message||"Revisá los permisos de cámara.");
+ }
+}
+
+function detenerEscaner(){
+ escaneando=false;
+
+ if(controlesEscaner){
+  try{controlesEscaner.stop();}catch(e){}
+  controlesEscaner=null;
+ }
+
+ const video=$("videoEscaner");
+
+ if(video.srcObject){
+  video.srcObject.getTracks().forEach(track=>track.stop());
+  video.srcObject=null;
+ }
+
+ $("zonaEscaner").classList.add("hidden");
+}
+
+$("btnEscanear").addEventListener("click",iniciarEscaner);
+$("btnDetener").addEventListener("click",detenerEscaner);
+
+/* EXPORTAR RESPALDO */
+
+async function blobADataURL(blob){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(reader.result);
+  reader.onerror=()=>reject(reader.error);
+  reader.readAsDataURL(blob);
+ });
+}
+
+$("exportar").addEventListener("click",async()=>{
+ try{
+  const datos=await leerTodos();
+  const salida=[];
+
+  for(const r of datos){
+   let foto=null;
+
+   if(r.foto instanceof Blob){
+    foto=await blobADataURL(r.foto);
+   }else{
+    foto=r.foto||null;
+   }
+
+   salida.push({...r,foto});
+  }
+
+  const blob=new Blob(
+   [JSON.stringify(salida,null,2)],
+   {type:"application/json"}
   );
 
-  const contenedor = $("historial");
-  contenedor.innerHTML = "";
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="respaldo_panol.json";
+  a.click();
 
-  if (!filtrados.length) {
-    contenedor.textContent = "No hay entregas registradas.";
-    return;
-  }
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
 
-  filtrados.forEach(r => {
-    const tarjeta = document.createElement("div");
-    tarjeta.className = "entrega";
-
-    tarjeta.innerHTML = `
-      <strong>${escapar(r.repuesto || "Sin nombre")}</strong>
-      <div class="fecha">${escapar(fechaBonita(r.fecha))}</div>
-      <div class="dato">Parte / tarea: ${escapar(r.parte)}</div>
-      <div class="dato">Código de barras / QR: ${escapar(r.codigoBarras || "Sin código")}</div>
-      <div class="dato">Cantidad entregada: ${escapar(r.entregada)}</div>
-      <div class="dato">Stock sistema: ${escapar(r.sistema)}</div>
-      <div class="dato">Stock físico: ${escapar(r.fisico)}</div>
-      <div class="dato">Texto etiqueta: ${escapar(r.texto)}</div>
-      <div class="dato">Usuario: ${escapar(r.usuario)}</div>
-    `;
-
-    if (r.foto) {
-      const img = document.createElement("img");
-
-      if (r.foto instanceof Blob) {
-        img.src = URL.createObjectURL(r.foto);
-      } else if (typeof r.foto === "string") {
-        img.src = r.foto;
-      }
-
-      img.alt = "Fotografía de etiqueta";
-      tarjeta.appendChild(img);
-    }
-
-    contenedor.appendChild(tarjeta);
-  });
-}
-
-// ESCÁNER DE CÓDIGOS
-
-async function abrirEscaner() {
-  $("panelEscaner").style.display = "block";
-  $("estadoEscaner").textContent = "Preparando cámara...";
-
-  try {
-    if (!window.ZXingBrowser) {
-      throw new Error("No se pudo cargar el lector. Revisá tu conexión a internet.");
-    }
-
-    lector = new ZXingBrowser.BrowserMultiFormatReader();
-
-    controlesEscaner = await lector.decodeFromVideoDevice(
-      undefined,
-      $("videoEscaner"),
-      (resultado, error, controles) => {
-        if (resultado) {
-          $("codigoBarras").value = resultado.getText();
-          $("estadoEscaner").textContent =
-            "¡Código leído correctamente!";
-
-          if (controles) {
-            controles.stop();
-          }
-
-          controlesEscaner = null;
-          $("panelEscaner").style.display = "none";
-        }
-      }
-    );
-
-    $("estadoEscaner").textContent =
-      "Cámara activa. Apuntá al código.";
-
-  } catch (error) {
-    console.error(error);
-    $("estadoEscaner").textContent =
-      "No se pudo abrir la cámara: " + error.message;
-  }
-}
-
-function cerrarEscaner() {
-  if (controlesEscaner) {
-    controlesEscaner.stop();
-    controlesEscaner = null;
-  }
-
-  $("panelEscaner").style.display = "none";
-}
-
-$("abrirEscaner").addEventListener("click", abrirEscaner);
-$("cerrarEscaner").addEventListener("click", cerrarEscaner);
-
-// GUARDAR ENTREGA
-
-$("formEntrega").addEventListener("submit", async e => {
-  e.preventDefault();
-
-  try {
-    mensaje("Guardando entrega...");
-
-    const archivo = $("foto").files[0] || null;
-
-    const registro = {
-      id: Date.now().toString() + "-" + Math.random().toString(16).slice(2),
-      fecha: new Date().toISOString(),
-      parte: $("parte").value,
-      repuesto: $("repuesto").value,
-      codigoBarras: $("codigoBarras").value.trim(),
-      foto: archivo,
-      texto: $("texto").value,
-      entregada: $("entregada").value,
-      sistema: $("sistema").value,
-      fisico: $("fisico").value,
-      usuario: $("usuario").value
-    };
-
-    await guardarDB(registro);
-    await mostrarHistorial();
-
-    $("formEntrega").reset();
-    mensaje("¡Entrega guardada correctamente!");
-
-  } catch (error) {
-    console.error(error);
-    mensaje("ERROR al guardar: " + error.message);
-  }
+ }catch(error){
+  alert("Error al crear respaldo: "+error.message);
+ }
 });
 
-// RESPALDO
+/* RESTAURAR RESPALDO */
 
-function blobADataURL(blob) {
-  return new Promise((resolve, reject) => {
-    const lector = new FileReader();
-    lector.onload = () => resolve(lector.result);
-    lector.onerror = () => reject(lector.error);
-    lector.readAsDataURL(blob);
-  });
+function dataURLABlob(dataURL){
+ const partes=dataURL.split(",");
+ const tipo=partes[0].match(/:(.*?);/)[1];
+ const binario=atob(partes[1]);
+ const bytes=new Uint8Array(binario.length);
+
+ for(let i=0;i<binario.length;i++){
+  bytes[i]=binario.charCodeAt(i);
+ }
+
+ return new Blob([bytes],{type:tipo});
 }
 
-function dataURLABlob(dataURL) {
-  const partes = dataURL.split(",");
-  const tipo = partes[0].match(/:(.*?);/)[1];
-  const binario = atob(partes[1]);
-  const bytes = new Uint8Array(binario.length);
+$("importar").addEventListener("click",async()=>{
+ const archivo=$("archivoRespaldo").files[0];
 
-  for (let i = 0; i < binario.length; i++) {
-    bytes[i] = binario.charCodeAt(i);
+ if(!archivo){
+  alert("Primero seleccioná un archivo JSON.");
+  return;
+ }
+
+ if(!confirm("¿Querés restaurar las entregas de esta copia? Los registros actuales se conservarán, salvo los que tengan el mismo identificador.")){
+  return;
+ }
+
+ try{
+  const contenido=await archivo.text();
+  const datos=JSON.parse(contenido);
+
+  if(!Array.isArray(datos)){
+   throw new Error("El archivo no tiene el formato esperado.");
   }
 
-  return new Blob([bytes], { type: tipo });
-}
+  for(const r of datos){
+   if(!r || !r.id)continue;
 
-$("exportar").addEventListener("click", async () => {
-  try {
-    mensaje("Preparando copia de seguridad...");
+   let foto=r.foto||null;
 
-    const registros = await leerTodos();
-    const respaldo = [];
+   if(typeof foto==="string" && foto.startsWith("data:")){
+    foto=dataURLABlob(foto);
+   }
 
-    for (const r of registros) {
-      const copia = { ...r };
-
-      if (copia.foto instanceof Blob) {
-        copia.foto = await blobADataURL(copia.foto);
-      }
-
-      respaldo.push(copia);
-    }
-
-    const contenido = {
-      aplicacion: "Registro de entregas del pañol",
-      version: 1,
-      fechaRespaldo: new Date().toISOString(),
-      entregas: respaldo
-    };
-
-    const blob = new Blob(
-      [JSON.stringify(contenido)],
-      { type: "application/json" }
-    );
-
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement("a");
-
-    enlace.href = url;
-    enlace.download = "respaldo_panol_" +
-      new Date().toISOString().slice(0, 10) + ".json";
-
-    enlace.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-    mensaje("Copia de seguridad descargada correctamente.");
-
-  } catch (error) {
-    console.error(error);
-    mensaje("Error al crear respaldo: " + error.message);
+   await guardarDB({...r,foto});
   }
+
+  registros=await leerTodos();
+  ordenarRegistros();
+  actualizar();
+  render();
+
+  alert("Respaldo restaurado correctamente.");
+
+ }catch(error){
+  console.error(error);
+  alert("No se pudo restaurar el respaldo: "+error.message);
+ }
 });
 
-// RESTAURAR RESPALDO
+/* INICIAR */
 
-$("importar").addEventListener("click", () => {
-  $("archivoRespaldo").click();
-});
+cargar();
 
-$("archivoRespaldo").addEventListener("change", async e => {
-  const archivo = e.target.files[0];
-  if (!archivo) return;
-
-  try {
-    mensaje("Leyendo copia de seguridad...");
-
-    const contenido = JSON.parse(await archivo.text());
-
-    const registros = Array.isArray(contenido)
-      ? contenido
-      : contenido.entregas;
-
-    if (!Array.isArray(registros)) {
-      throw new Error("El archivo no contiene una lista de entregas válida.");
-    }
-
-    if (!confirm(
-      "Se van a importar " + registros.length +
-      " entregas. Los registros existentes se conservarán. ¿Continuar?"
-    )) {
-      mensaje("Restauración cancelada.");
-      e.target.value = "";
-      return;
-    }
-
-    let cantidad = 0;
-
-    for (const original of registros) {
-      const r = { ...original };
-
-      if (typeof r.foto === "string" &&
-          r.foto.startsWith("data:")) {
-        r.foto = dataURLABlob(r.foto);
-      }
-
-      if (!r.id) {
-        r.id = "importado-" + Date.now() + "-" + cantidad;
-      }
-
-      await guardarDB(r);
-      cantidad++;
-    }
-
-    await mostrarHistorial();
-
-    mensaje("Restauración terminada. Entregas importadas: " + cantidad);
-
-    alert("Copia restaurada correctamente.");
-
-  } catch (error) {
-    console.error(error);
-    mensaje("Error al restaurar: " + error.message);
-    alert("No se pudo restaurar: " + error.message);
-  }
-
-  e.target.value = "";
-});
-
-$("buscar").addEventListener("input", mostrarHistorial);
-
-async function iniciar() {
-  try {
-    await abrirDB();
-    await mostrarHistorial();
-    mensaje("Almacenamiento local preparado.");
-  } catch (error) {
-    console.error(error);
-    mensaje("Error al iniciar almacenamiento: " + error.message);
-  }
-}
-
-iniciar();
 </script>
-
 </body>
 </html>
