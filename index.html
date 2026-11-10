@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,8 +7,7 @@
 <meta name="theme-color" content="#172b46">
 <title>Registro de Entregas - Pañol</title>
 
-<!-- LECTOR ZXING: ARCHIVO UMD CORREGIDO -->
-<script src="https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -68,14 +68,17 @@ button:disabled{opacity:.5}
  width:100%;max-height:220px;object-fit:contain;margin-top:8px
 }
 #estado{font-size:13px;color:#536276;margin-top:10px}
-#estadoEscaner{font-size:13px;margin-top:10px;color:#536276}
-#videoEscaner{
- width:100%;max-height:300px;background:#111;
- border-radius:10px;margin-top:12px
+#estadoOCR{
+ font-size:13px;color:#24558a;margin-top:10px;
+ white-space:pre-wrap
 }
-.scanner-box{
- margin-top:12px;padding:12px;background:#f1f5f9;
- border-radius:10px
+.progress{
+ width:100%;height:9px;background:#e5edf6;
+ border-radius:10px;overflow:hidden;margin-top:10px
+}
+#barraOCR{
+ width:0%;height:100%;background:#24558a;
+ transition:width .2s
 }
 </style>
 </head>
@@ -119,23 +122,18 @@ button:disabled{opacity:.5}
 <label>Fotografía de la etiqueta</label>
 <input id="foto" type="file" accept="image/*" capture="environment">
 
-<label>Texto de la etiqueta</label>
-<textarea id="texto" rows="2" placeholder="Texto de la etiqueta"></textarea>
-
-<label>Código de barras o QR (opcional)</label>
-<input id="codigoBarras" placeholder="Ingresar código manualmente">
-
-<button type="button" class="secondary" id="btnEscanear">
- ESCANEAR CÓDIGO CON LA CÁMARA
+<button type="button" class="secondary" id="btnOCR">
+ RECONOCER TEXTO DE LA FOTO
 </button>
 
-<div id="zonaEscaner" class="scanner-box hidden">
- <video id="videoEscaner" playsinline></video>
- <p id="estadoEscaner">Preparando lector...</p>
- <button type="button" class="secondary" id="btnDetener">
-  DETENER CÁMARA
- </button>
+<div class="progress">
+ <div id="barraOCR"></div>
 </div>
+<p id="estadoOCR">Seleccioná una fotografía para comenzar.</p>
+
+<label>Texto reconocido de la etiqueta (editable)</label>
+<textarea id="texto" rows="6"
+ placeholder="El texto reconocido aparecerá aquí. También podés escribir o corregirlo manualmente."></textarea>
 
 <label>Cantidad entregada</label>
 <input id="entregada" type="number" min="0" step="any" required>
@@ -162,7 +160,7 @@ button:disabled{opacity:.5}
 <div class="card">
 <h2>Historial de entregas</h2>
 
-<input id="buscar" placeholder="Buscar repuesto, tarea o código...">
+<input id="buscar" placeholder="Buscar repuesto, tarea o texto...">
 
 <div id="lista" style="margin-top:15px"></div>
 
@@ -190,9 +188,8 @@ const STORE_NAME="entregas";
 
 let db=null;
 let registros=[];
-let lector=null;
-let controlesEscaner=null;
-let escaneando=false;
+let workerOCR=null;
+let cargandoOCR=null;
 
 const $=id=>document.getElementById(id);
 
@@ -272,6 +269,104 @@ function mostrarTab(tab){
 $("tabNew").addEventListener("click",()=>mostrarTab("new"));
 $("tabHistory").addEventListener("click",()=>mostrarTab("history"));
 
+/* MOTOR OCR */
+
+async function obtenerWorker(){
+ if(workerOCR)return workerOCR;
+ if(cargandoOCR)return cargandoOCR;
+
+ cargandoOCR=(async()=>{
+  if(!window.Tesseract){
+   throw new Error("No se pudo cargar Tesseract. Revisá la conexión a internet.");
+  }
+
+  workerOCR=await Tesseract.createWorker("spa+eng",1,{
+   logger:mensaje=>{
+    if(mensaje.status){
+     let porcentaje=0;
+
+     if(typeof mensaje.progress==="number"){
+      porcentaje=Math.round(mensaje.progress*100);
+     }
+
+     $("barraOCR").style.width=porcentaje+"%";
+     $("estadoOCR").textContent=
+      mensaje.status+
+      (porcentaje?" ("+porcentaje+"%)":"");
+    }
+   }
+  });
+
+  return workerOCR;
+ })();
+
+ try{
+  return await cargandoOCR;
+ }catch(error){
+  workerOCR=null;
+  throw error;
+ }finally{
+  cargandoOCR=null;
+ }
+}
+
+$("btnOCR").addEventListener("click",async()=>{
+ const archivo=$("foto").files[0];
+ const boton=$("btnOCR");
+
+ if(!archivo){
+  alert("Primero sacá o seleccioná una fotografía de la etiqueta.");
+  return;
+ }
+
+ if(!archivo.type.startsWith("image/")){
+  alert("El archivo seleccionado no es una imagen.");
+  return;
+ }
+
+ boton.disabled=true;
+ boton.textContent="PROCESANDO FOTO...";
+ $("barraOCR").style.width="0%";
+ $("estadoOCR").textContent="Preparando reconocimiento...";
+
+ try{
+  const worker=await obtenerWorker();
+
+  $("estadoOCR").textContent=
+   "Analizando la etiqueta. Esto puede tardar unos segundos...";
+
+  const resultado=await worker.recognize(archivo);
+  const textoReconocido=resultado.data.text.trim();
+
+  $("barraOCR").style.width="100%";
+
+  if(textoReconocido){
+   $("texto").value=textoReconocido;
+   $("estadoOCR").textContent=
+    "¡Reconocimiento terminado! Revisá y corregí el texto si es necesario.";
+  }else{
+   $("estadoOCR").textContent=
+    "No se encontró texto. Probá con una foto más nítida y bien iluminada.";
+  }
+
+ }catch(error){
+  console.error(error);
+  $("estadoOCR").textContent=
+   "Error al reconocer texto: "+error.message;
+  alert("No se pudo procesar la fotografía. Revisá la conexión a internet.");
+ }finally{
+  boton.disabled=false;
+  boton.textContent="RECONOCER TEXTO DE LA FOTO";
+ }
+});
+
+$("foto").addEventListener("change",()=>{
+ $("barraOCR").style.width="0%";
+ $("estadoOCR").textContent=$("foto").files.length?
+  "Fotografía seleccionada. Tocá RECONOCER TEXTO DE LA FOTO.":
+  "Seleccioná una fotografía para comenzar.";
+});
+
 /* GUARDAR ENTREGA */
 
 $("formEntrega").addEventListener("submit",async e=>{
@@ -300,7 +395,6 @@ $("formEntrega").addEventListener("submit",async e=>{
    parte:$("parte").value.trim(),
    repuesto:$("repuesto").value.trim(),
    texto:$("texto").value.trim(),
-   codigoBarras:$("codigoBarras").value.trim(),
    foto:archivo,
    entregada:Number($("entregada").value),
    sistema:Number($("sistema").value),
@@ -315,10 +409,11 @@ $("formEntrega").addEventListener("submit",async e=>{
   actualizar();
 
   $("formEntrega").reset();
+  $("barraOCR").style.width="0%";
+  $("estadoOCR").textContent="Seleccioná una fotografía para comenzar.";
   $("estado").textContent="Entrega guardada correctamente.";
 
   alert("¡Entrega guardada correctamente!");
-  detenerEscaner();
   mostrarTab("history");
 
  }catch(error){
@@ -343,7 +438,6 @@ function render(){
    (r.parte||"")+" "+
    (r.repuesto||"")+" "+
    (r.texto||"")+" "+
-   (r.codigoBarras||"")+" "+
    (r.usuario||"")
   ).toLowerCase().includes(q)
  );
@@ -383,10 +477,7 @@ function render(){
   const texto=document.createElement("p");
   texto.textContent="Etiqueta: "+(r.texto||"Sin texto");
 
-  const codigo=document.createElement("p");
-  codigo.textContent="Código: "+(r.codigoBarras||"Sin código");
-
-  div.append(titulo,fecha,datos,dif,usuario,texto,codigo);
+  div.append(titulo,fecha,datos,dif,usuario,texto);
 
   if(r.foto){
    const img=document.createElement("img");
@@ -408,76 +499,6 @@ function render(){
 }
 
 $("buscar").addEventListener("input",render);
-
-/* ESCÁNER DE CÓDIGOS */
-
-async function iniciarEscaner(){
- const zona=$("zonaEscaner");
- const estado=$("estadoEscaner");
- const video=$("videoEscaner");
-
- zona.classList.remove("hidden");
- estado.textContent="Comprobando lector...";
-
- if(!window.ZXingBrowser ||
-    !window.ZXingBrowser.BrowserMultiFormatReader){
-  estado.textContent="No se pudo cargar la biblioteca del lector. Revisá la conexión a internet.";
-  return;
- }
-
- try{
-  lector=new ZXingBrowser.BrowserMultiFormatReader();
-  estado.textContent="Solicitando acceso a la cámara...";
-
-  escaneando=true;
-
-  controlesEscaner=await lector.decodeFromVideoDevice(
-   undefined,
-   video,
-   (resultado,error)=>{
-    if(resultado){
-     const codigo=resultado.getText();
-     $("codigoBarras").value=codigo;
-     estado.textContent="Código leído correctamente: "+codigo;
-     detenerEscaner();
-    }
-   }
-  );
-
-  if(escaneando){
-   estado.textContent="Cámara activa. Apuntá al código de barras o QR.";
-  }
-
- }catch(error){
-  console.error(error);
-  escaneando=false;
-
-  estado.textContent=
-   "No se pudo abrir la cámara: "+
-   (error.message||"Revisá los permisos de cámara.");
- }
-}
-
-function detenerEscaner(){
- escaneando=false;
-
- if(controlesEscaner){
-  try{controlesEscaner.stop();}catch(e){}
-  controlesEscaner=null;
- }
-
- const video=$("videoEscaner");
-
- if(video.srcObject){
-  video.srcObject.getTracks().forEach(track=>track.stop());
-  video.srcObject=null;
- }
-
- $("zonaEscaner").classList.add("hidden");
-}
-
-$("btnEscanear").addEventListener("click",iniciarEscaner);
-$("btnDetener").addEventListener("click",detenerEscaner);
 
 /* EXPORTAR RESPALDO */
 
