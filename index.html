@@ -1,253 +1,351 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#172b46">
 <title>Registro de Entregas - Pañol</title>
 <style>
-:root {
-  --azul:#172b46;
-  --azul2:#24558a;
-  --fondo:#eef2f6;
-  --blanco:#ffffff;
-  --gris:#657386;
-}
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:var(--fondo);
-  color:#243247;
-}
-header{
-  background:var(--azul);
-  color:white;
-  padding:23px 18px;
-}
-header h1{font-size:22px;margin:0 0 6px}
+body{margin:0;background:#eef2f6;color:#243247;font-family:Arial,sans-serif}
+header{background:#172b46;color:white;padding:22px 18px}
+header h1{font-size:21px;margin:0 0 6px}
 header p{margin:0;color:#c5d4e6;font-size:13px}
-main{max-width:650px;margin:auto;padding:16px}
-.card{
-  background:white;
-  padding:18px;
-  border-radius:14px;
-  margin-bottom:15px;
-  box-shadow:0 3px 12px #172b4610;
-}
-h2{font-size:18px;margin:0 0 16px}
-label{
-  display:block;
-  font-size:13px;
-  font-weight:bold;
-  margin:13px 0 6px;
-}
-input,textarea{
-  width:100%;
-  padding:12px;
-  border:1px solid #ccd5df;
-  border-radius:9px;
-  font-size:15px;
-  background:white;
-}
-button{
-  border:0;
-  border-radius:9px;
-  padding:13px;
-  font-size:14px;
-  font-weight:bold;
-  cursor:pointer;
-}
-.primary{background:var(--azul2);color:white;width:100%;margin-top:18px}
-.secondary{background:#e5edf6;color:var(--azul);width:100%}
+main{max-width:650px;margin:auto;padding:15px}
+.card{background:white;padding:18px;border-radius:14px;margin-bottom:15px;box-shadow:0 3px 12px #172b4610}
+h2{font-size:18px;margin:0 0 15px}
+label{display:block;font-size:13px;font-weight:bold;margin:13px 0 6px}
+input,textarea{width:100%;padding:12px;border:1px solid #ccd5df;border-radius:9px;font-size:15px;background:white}
+button{border:0;border-radius:9px;padding:13px;font-size:14px;font-weight:bold;cursor:pointer}
+.primary{background:#24558a;color:white;width:100%;margin-top:18px}
+.secondary{background:#e5edf6;color:#172b46;width:100%;margin-top:10px}
 .tabs{display:flex;gap:8px;margin-bottom:15px}
-.tabs button{flex:1;background:#dce5ef;color:var(--azul)}
-.tabs button.active{background:var(--azul);color:white}
+.tabs button{flex:1;background:#dce5ef;color:#172b46}
+.tabs button.active{background:#172b46;color:white}
 .hidden{display:none}
-.stat{
-  background:#e9f0f8;
-  padding:13px;
-  border-radius:10px;
-  text-align:center;
-  flex:1;
-}
 .stats{display:flex;gap:10px;margin-bottom:15px}
-.stat strong{display:block;font-size:22px;color:var(--azul)}
-.stat span{font-size:12px;color:var(--gris)}
-.record{
-  border:1px solid #e0e6ed;
-  border-radius:10px;
-  padding:13px;
-  margin-bottom:10px;
-}
+.stat{background:#e9f0f8;padding:13px;border-radius:10px;text-align:center;flex:1}
+.stat strong{display:block;font-size:22px;color:#172b46}
+.stat span{font-size:12px;color:#657386}
+.record{border:1px solid #e0e6ed;border-radius:10px;padding:13px;margin-bottom:10px;overflow-wrap:anywhere}
 .record h3{margin:0 0 7px;font-size:16px}
-.record p{font-size:13px;margin:5px 0;color:#536276}
+.record p{font-size:13px;margin:6px 0;color:#536276}
 .difference{color:#bd6b19;font-weight:bold}
 .ok{color:#23804b;font-weight:bold}
-small{color:var(--gris)}
+.record img{width:100%;max-height:220px;object-fit:contain;margin-top:8px}
+#estado{font-size:13px;color:#536276;margin-top:10px}
 </style>
 </head>
 <body>
 <header>
-  <h1>📦 Registro de Entregas</h1>
-  <p>Control personal de movimientos del pañol</p>
+<h1>📦 Registro de Entregas</h1>
+<p>Control personal de movimientos del pañol</p>
 </header>
 <main>
-  <div class="stats">
-    <div class="stat"><strong id="total">0</strong><span>Entregas</span></div>
-    <div class="stat"><strong id="diff">0</strong><span>Diferencias</span></div>
-  </div>
+<div class="stats">
+<div class="stat"><strong id="total">0</strong><span>Entregas</span></div>
+<div class="stat"><strong id="diff">0</strong><span>Diferencias</span></div>
+</div>
 
-  <div class="tabs">
-    <button id="tabNew" class="active" onclick="showTab('new')">＋ Entrega</button>
-    <button id="tabHistory" onclick="showTab('history')">☷ Historial</button>
-  </div>
+<div class="tabs">
+<button id="tabNew" class="active">＋ Entrega</button>
+<button id="tabHistory">☷ Historial</button>
+</div>
 
-  <section id="new">
-    <div class="card">
-      <h2>Nueva entrega</h2>
-      <form id="form">
-        <label>Número de parte o tarea</label>
-        <input id="parte" required placeholder="Ej: Tarea 1250">
+<section id="new">
+<div class="card">
+<h2>Nueva entrega</h2>
+<form id="form">
+<label>Número de parte o tarea</label>
+<input id="parte" required placeholder="Ej: Tarea 1250">
 
-        <label>Nombre del repuesto</label>
-        <input id="repuesto" required placeholder="Nombre del repuesto">
+<label>Nombre del repuesto</label>
+<input id="repuesto" required placeholder="Nombre del repuesto">
 
-        <label>Fotografía / observaciones de etiqueta</label>
-        <input id="foto" type="file" accept="image/*" capture="environment">
-        <textarea id="texto" rows="2" placeholder="Texto de la etiqueta o código leído"></textarea>
+<label>Fotografía de la etiqueta</label>
+<input id="foto" type="file" accept="image/*" capture="environment">
 
-        <label>Cantidad entregada</label>
-        <input id="entregada" type="number" min="0" step="any" required>
+<label>Texto de la etiqueta o código</label>
+<textarea id="texto" rows="2" placeholder="Texto reconocido o ingresado manualmente"></textarea>
 
-        <label>Stock que figura en el sistema</label>
-        <input id="sistema" type="number" min="0" step="any" required>
+<label>Cantidad entregada</label>
+<input id="entregada" type="number" min="0" step="any" required>
 
-        <label>Stock físico observado</label>
-        <input id="fisico" type="number" min="0" step="any" required>
+<label>Stock del sistema</label>
+<input id="sistema" type="number" min="0" step="any" required>
 
-        <label>Usuario / pañolero</label>
-        <input id="usuario" placeholder="Nombre del responsable">
+<label>Stock físico observado</label>
+<input id="fisico" type="number" min="0" step="any" required>
 
-        <button class="primary" type="submit">GUARDAR ENTREGA</button>
-      </form>
-    </div>
-  </section>
+<label>Usuario / pañolero</label>
+<input id="usuario" placeholder="Nombre del responsable">
 
-  <section id="history" class="hidden">
-    <div class="card">
-      <h2>Historial de entregas</h2>
-      <input id="buscar" placeholder="Buscar repuesto o número de tarea..." oninput="render()">
-      <div id="lista" style="margin-top:15px"></div>
-      <button class="secondary" onclick="exportar()">DESCARGAR RESPALDO JSON</button>
-    </div>
-  </section>
+<button class="primary" id="guardar" type="submit">GUARDAR ENTREGA</button>
+<p id="estado" role="status"></p>
+</form>
+</div>
+</section>
+
+<section id="history" class="hidden">
+<div class="card">
+<h2>Historial de entregas</h2>
+<input id="buscar" placeholder="Buscar repuesto o número de tarea...">
+<div id="lista" style="margin-top:15px"></div>
+<button class="secondary" id="exportar">DESCARGAR RESPALDO JSON</button>
+</div>
+</section>
 </main>
 
 <script>
-const KEY="panol_entregas_v1";
-let registros=JSON.parse(localStorage.getItem(KEY)||"[]");
+"use strict";
 
-function guardar(){
-  localStorage.setItem(KEY,JSON.stringify(registros));
-  actualizar();
-}
+const DB_NAME="PanolRegistroDB";
+const DB_VERSION=1;
+const STORE="entregas";
+let db;
+let registros=[];
 
-function showTab(tab){
-  document.getElementById("new").classList.toggle("hidden",tab!=="new");
-  document.getElementById("history").classList.toggle("hidden",tab!=="history");
-  document.getElementById("tabNew").classList.toggle("active",tab==="new");
-  document.getElementById("tabHistory").classList.toggle("active",tab==="history");
-  if(tab==="history")render();
-}
+const $=id=>document.getElementById(id);
 
-document.getElementById("form").addEventListener("submit",async e=>{
-  e.preventDefault();
-  const archivo=document.getElementById("foto").files[0];
-  let foto="";
-  if(archivo){
-    foto=await new Promise(resolve=>{
-      const reader=new FileReader();
-      reader.onload=()=>resolve(reader.result);
-      reader.readAsDataURL(archivo);
-    });
-  }
-
-  const r={
-    id:Date.now(),
-    fecha:new Date().toISOString(),
-    parte:parte.value,
-    repuesto:repuesto.value,
-    texto:texto.value,
-    foto:foto,
-    entregada:Number(entregada.value),
-    sistema:Number(sistema.value),
-    fisico:Number(fisico.value),
-    usuario:usuario.value
+function abrirDB(){
+ return new Promise((resolve,reject)=>{
+  const request=indexedDB.open(DB_NAME,DB_VERSION);
+  request.onupgradeneeded=()=>{
+   const database=request.result;
+   if(!database.objectStoreNames.contains(STORE)){
+    database.createObjectStore(STORE,{keyPath:"id"});
+   }
   };
-  registros.unshift(r);
-  guardar();
-  e.target.reset();
-  alert("Entrega guardada correctamente");
-  showTab("history");
-});
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error);
+ });
+}
+
+function guardarDB(registro){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,"readwrite");
+  tx.objectStore(STORE).put(registro);
+  tx.oncomplete=()=>resolve();
+  tx.onerror=()=>reject(tx.error);
+  tx.onabort=()=>reject(tx.error);
+ });
+}
+
+function leerTodos(){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,"readonly");
+  const request=tx.objectStore(STORE).getAll();
+  request.onsuccess=()=>resolve(request.result||[]);
+  request.onerror=()=>reject(request.error);
+ });
+}
+
+async function migrarDatosAnteriores(){
+ const anteriores=localStorage.getItem("panol_entregas_v1");
+ if(!anteriores)return;
+ try{
+  const datos=JSON.parse(anteriores);
+  if(!Array.isArray(datos))return;
+  for(const r of datos){
+   if(r && r.id){
+    await guardarDB(r);
+   }
+  }
+ }catch(error){
+  console.error("No se pudieron recuperar todos los datos anteriores",error);
+ }
+}
 
 function actualizar(){
-  document.getElementById("total").textContent=registros.length;
-  document.getElementById("diff").textContent=
-    registros.filter(r=>r.sistema!==r.fisico).length;
+ $("total").textContent=registros.length;
+ $("diff").textContent=registros.filter(r=>Number(r.sistema)!==Number(r.fisico)).length;
 }
 
-function render(){
-  const q=document.getElementById("buscar").value.toLowerCase();
-  const lista=document.getElementById("lista");
-  const encontrados=registros.filter(r=>
-    (r.parte+" "+r.repuesto+" "+r.texto+" "+r.usuario).toLowerCase().includes(q)
-  );
-  lista.innerHTML="";
-  if(!encontrados.length){
-    lista.innerHTML="<p>No hay registros para mostrar.</p>";
-    return;
-  }
-  encontrados.forEach(r=>{
-    const div=document.createElement("div");
-    div.className="record";
-    const fecha=new Date(r.fecha).toLocaleString("es-AR");
-    const diferencia=r.sistema-r.fisico;
-    div.innerHTML=`
-      <h3>${escapeHTML(r.repuesto)}</h3>
-      <p><b>Parte/tarea:</b> ${escapeHTML(r.parte)}</p>
-      <p><b>Fecha:</b> ${fecha}</p>
-      <p><b>Entregado:</b> ${r.entregada}</p>
-      <p><b>Stock sistema:</b> ${r.sistema} | <b>Stock físico:</b> ${r.fisico}</p>
-      <p class="${diferencia!==0?'difference':'ok'}">
-      ${diferencia!==0?'Diferencia: '+diferencia:'Sin diferencia'}
-      </p>
-      <p><b>Usuario:</b> ${escapeHTML(r.usuario||"No indicado")}</p>
-      <p>${escapeHTML(r.texto)}</p>
-      ${r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px">':''}
-    `;
-    lista.appendChild(div);
-  });
+function mostrarTab(tab){
+ $("new").classList.toggle("hidden",tab!=="new");
+ $("history").classList.toggle("hidden",tab!=="history");
+ $("tabNew").classList.toggle("active",tab==="new");
+ $("tabHistory").classList.toggle("active",tab==="history");
+ if(tab==="history")render();
 }
+
+$("tabNew").addEventListener("click",()=>mostrarTab("new"));
+$("tabHistory").addEventListener("click",()=>mostrarTab("history"));
 
 function escapeHTML(s){
-  return String(s??"").replace(/[&<>"']/g,c=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
+ return String(s??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
 }
 
-function exportar(){
-  const blob=new Blob([JSON.stringify(registros,null,2)],{type:"application/json"});
+async function cargar(){
+ try{
+  db=await abrirDB();
+  await migrarDatosAnteriores();
+  registros=await leerTodos();
+  registros.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  actualizar();
+  $("estado").textContent="Almacenamiento local preparado.";
+ }catch(error){
+  console.error(error);
+  $("estado").textContent="Error al abrir el almacenamiento: "+error.message;
+  alert("No se pudo preparar el almacenamiento. No cargues entregas todavía.");
+ }
+}
+
+$("form").addEventListener("submit",async e=>{
+ e.preventDefault();
+ if(!db){
+  alert("El almacenamiento todavía no está disponible.");
+  return;
+ }
+
+ const boton=$("guardar");
+ boton.disabled=true;
+ boton.textContent="GUARDANDO...";
+ $("estado").textContent="Guardando entrega y fotografía...";
+
+ try{
+  const archivo=$("foto").files[0];
+  let foto=null;
+
+  if(archivo){
+   if(!archivo.type.startsWith("image/")){
+    throw new Error("El archivo seleccionado no es una imagen.");
+   }
+   foto=archivo;
+  }
+
+  const registro={
+   id:Date.now(),
+   fecha:new Date().toISOString(),
+   parte:$("parte").value.trim(),
+   repuesto:$("repuesto").value.trim(),
+   texto:$("texto").value.trim(),
+   foto:foto,
+   entregada:Number($("entregada").value),
+   sistema:Number($("sistema").value),
+   fisico:Number($("fisico").value),
+   usuario:$("usuario").value.trim()
+  };
+
+  await guardarDB(registro);
+  registros=await leerTodos();
+  registros.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  actualizar();
+
+  $("form").reset();
+  $("estado").textContent="Entrega guardada correctamente.";
+  alert("¡Entrega guardada correctamente!");
+  mostrarTab("history");
+
+ }catch(error){
+  console.error(error);
+  $("estado").textContent="ERROR: "+error.message;
+  alert("No se pudo guardar la entrega: "+error.message);
+ }finally{
+  boton.disabled=false;
+  boton.textContent="GUARDAR ENTREGA";
+ }
+});
+
+function render(){
+ const q=$("buscar").value.toLowerCase();
+ const lista=$("lista");
+ lista.innerHTML="";
+
+ const encontrados=registros.filter(r=>
+  (r.parte+" "+r.repuesto+" "+r.texto+" "+r.usuario).toLowerCase().includes(q)
+ );
+
+ if(!encontrados.length){
+  lista.textContent="No hay registros para mostrar.";
+  return;
+ }
+
+ encontrados.forEach(r=>{
+  const div=document.createElement("div");
+  div.className="record";
+  const diferencia=Number(r.sistema)-Number(r.fisico);
+
+  const fecha=document.createElement("p");
+  fecha.textContent="Fecha: "+new Date(r.fecha).toLocaleString("es-AR");
+
+  const titulo=document.createElement("h3");
+  titulo.textContent=r.repuesto;
+
+  const datos=document.createElement("p");
+  datos.textContent="Parte/tarea: "+r.parte+
+   " | Entregado: "+r.entregada+
+   " | Sistema: "+r.sistema+
+   " | Físico: "+r.fisico;
+
+  const dif=document.createElement("p");
+  dif.className=diferencia!==0?"difference":"ok";
+  dif.textContent=diferencia!==0?"Diferencia: "+diferencia:"Sin diferencia";
+
+  const usuario=document.createElement("p");
+  usuario.textContent="Usuario: "+(r.usuario||"No indicado");
+
+  const texto=document.createElement("p");
+  texto.textContent="Etiqueta: "+(r.texto||"Sin texto");
+
+  div.append(titulo,fecha,datos,dif,usuario,texto);
+
+  if(r.foto){
+   const img=document.createElement("img");
+   if(r.foto instanceof Blob){
+    img.src=URL.createObjectURL(r.foto);
+    img.onload=()=>URL.revokeObjectURL(img.src);
+   }else if(typeof r.foto==="string"){
+    img.src=r.foto;
+   }
+   img.alt="Fotografía de etiqueta";
+   div.appendChild(img);
+  }
+
+  lista.appendChild(div);
+ });
+}
+
+$("buscar").addEventListener("input",render);
+
+$("exportar").addEventListener("click",async()=>{
+ try{
+  const datos=await leerTodos();
+  const salida=[];
+  for(const r of datos){
+   let foto=null;
+   if(r.foto instanceof Blob){
+    foto=await new Promise((resolve,reject)=>{
+     const reader=new FileReader();
+     reader.onload=()=>resolve(reader.result);
+     reader.onerror=()=>reject(reader.error);
+     reader.readAsDataURL(r.foto);
+    });
+   }else{
+    foto=r.foto;
+   }
+   salida.push({...r,foto});
+  }
+
+  const blob=new Blob(
+   [JSON.stringify(salida,null,2)],
+   {type:"application/json"}
+  );
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
   a.href=url;
   a.download="respaldo_panol.json";
   a.click();
-  URL.revokeObjectURL(url);
-}
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+ }catch(error){
+  alert("Error al crear respaldo: "+error.message);
+ }
+});
 
-actualizar();
+cargar();
 </script>
 </body>
 </html>
