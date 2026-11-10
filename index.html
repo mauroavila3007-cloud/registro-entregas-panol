@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -99,6 +98,26 @@ button.danger { background: #a33d3d; }
 .dato { margin: 6px 0; font-size: 14px; }
 .fecha { color: #68798a; font-size: 12px; }
 #archivoRespaldo { display: none; }
+
+#panelEscaner {
+  display: none;
+  margin-top: 14px;
+  padding: 12px;
+  background: #edf3f8;
+  border-radius: 10px;
+}
+
+#videoEscaner {
+  width: 100%;
+  max-height: 350px;
+  background: #111;
+  border-radius: 8px;
+}
+
+.aviso {
+  font-size: 13px;
+  color: #526579;
+}
 </style>
 </head>
 
@@ -119,6 +138,22 @@ button.danger { background: #a33d3d; }
 
     <label for="repuesto">Repuesto</label>
     <input id="repuesto" type="text" required placeholder="Nombre del repuesto">
+
+    <label for="codigoBarras">Código de barras / QR (opcional)</label>
+    <input id="codigoBarras" type="text" placeholder="Escaneá o escribí el código">
+
+    <button type="button" id="abrirEscaner">
+      ESCANEAR CÓDIGO CON LA CÁMARA
+    </button>
+
+    <div id="panelEscaner">
+      <p><strong>Apuntá la cámara al código del repuesto.</strong></p>
+      <video id="videoEscaner" muted playsinline></video>
+      <p id="estadoEscaner" class="aviso">Iniciando cámara...</p>
+      <button type="button" class="danger" id="cerrarEscaner">
+        CERRAR ESCÁNER
+      </button>
+    </div>
 
     <label for="foto">Fotografía de la etiqueta</label>
     <input id="foto" type="file" accept="image/*" capture="environment">
@@ -147,7 +182,8 @@ button.danger { background: #a33d3d; }
 <section class="card">
   <h2>Historial de entregas</h2>
 
-  <input id="buscar" type="search" placeholder="Buscar por repuesto o número de parte">
+  <input id="buscar" type="search"
+  placeholder="Buscar por repuesto, parte o código">
 
   <div id="historial">Cargando historial...</div>
 
@@ -162,11 +198,16 @@ button.danger { background: #a33d3d; }
   </button>
 </section>
 
+<!-- Biblioteca para leer códigos de barras y QR -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
+
 <script>
 const DB_NAME = "PanolRegistroDB";
 const STORE_NAME = "entregas";
 
 let db;
+let lector;
+let controlesEscaner = null;
 
 const $ = id => document.getElementById(id);
 
@@ -251,7 +292,8 @@ async function mostrarHistorial() {
 
   const filtrados = registros.filter(r =>
     String(r.repuesto || "").toLowerCase().includes(filtro) ||
-    String(r.parte || "").toLowerCase().includes(filtro)
+    String(r.parte || "").toLowerCase().includes(filtro) ||
+    String(r.codigoBarras || "").toLowerCase().includes(filtro)
   );
 
   const contenedor = $("historial");
@@ -270,6 +312,7 @@ async function mostrarHistorial() {
       <strong>${escapar(r.repuesto || "Sin nombre")}</strong>
       <div class="fecha">${escapar(fechaBonita(r.fecha))}</div>
       <div class="dato">Parte / tarea: ${escapar(r.parte)}</div>
+      <div class="dato">Código de barras / QR: ${escapar(r.codigoBarras || "Sin código")}</div>
       <div class="dato">Cantidad entregada: ${escapar(r.entregada)}</div>
       <div class="dato">Stock sistema: ${escapar(r.sistema)}</div>
       <div class="dato">Stock físico: ${escapar(r.fisico)}</div>
@@ -294,6 +337,62 @@ async function mostrarHistorial() {
   });
 }
 
+// ESCÁNER DE CÓDIGOS
+
+async function abrirEscaner() {
+  $("panelEscaner").style.display = "block";
+  $("estadoEscaner").textContent = "Preparando cámara...";
+
+  try {
+    if (!window.ZXingBrowser) {
+      throw new Error("No se pudo cargar el lector. Revisá tu conexión a internet.");
+    }
+
+    lector = new ZXingBrowser.BrowserMultiFormatReader();
+
+    controlesEscaner = await lector.decodeFromVideoDevice(
+      undefined,
+      $("videoEscaner"),
+      (resultado, error, controles) => {
+        if (resultado) {
+          $("codigoBarras").value = resultado.getText();
+          $("estadoEscaner").textContent =
+            "¡Código leído correctamente!";
+
+          if (controles) {
+            controles.stop();
+          }
+
+          controlesEscaner = null;
+          $("panelEscaner").style.display = "none";
+        }
+      }
+    );
+
+    $("estadoEscaner").textContent =
+      "Cámara activa. Apuntá al código.";
+
+  } catch (error) {
+    console.error(error);
+    $("estadoEscaner").textContent =
+      "No se pudo abrir la cámara: " + error.message;
+  }
+}
+
+function cerrarEscaner() {
+  if (controlesEscaner) {
+    controlesEscaner.stop();
+    controlesEscaner = null;
+  }
+
+  $("panelEscaner").style.display = "none";
+}
+
+$("abrirEscaner").addEventListener("click", abrirEscaner);
+$("cerrarEscaner").addEventListener("click", cerrarEscaner);
+
+// GUARDAR ENTREGA
+
 $("formEntrega").addEventListener("submit", async e => {
   e.preventDefault();
 
@@ -307,6 +406,7 @@ $("formEntrega").addEventListener("submit", async e => {
       fecha: new Date().toISOString(),
       parte: $("parte").value,
       repuesto: $("repuesto").value,
+      codigoBarras: $("codigoBarras").value.trim(),
       foto: archivo,
       texto: $("texto").value,
       entregada: $("entregada").value,
@@ -326,6 +426,8 @@ $("formEntrega").addEventListener("submit", async e => {
     mensaje("ERROR al guardar: " + error.message);
   }
 });
+
+// RESPALDO
 
 function blobADataURL(blob) {
   return new Promise((resolve, reject) => {
@@ -386,7 +488,7 @@ $("exportar").addEventListener("click", async () => {
       new Date().toISOString().slice(0, 10) + ".json";
 
     enlace.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 
     mensaje("Copia de seguridad descargada correctamente.");
 
@@ -395,6 +497,8 @@ $("exportar").addEventListener("click", async () => {
     mensaje("Error al crear respaldo: " + error.message);
   }
 });
+
+// RESTAURAR RESPALDO
 
 $("importar").addEventListener("click", () => {
   $("archivoRespaldo").click();
@@ -477,5 +581,3 @@ iniciar();
 
 </body>
 </html>
-
-   
